@@ -3,6 +3,11 @@
 .site-search-form button { position: absolute; right: 5px; padding: 4px 6px; font-size: 21px; line-height: 1; }
 .site-theme { border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; white-space: nowrap; }
 .site-theme:hover,.site-search-form button:hover { color: var(--blue); }
+.site-sounds { display: inline-flex; flex: none; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 6px; padding: 7px; min-height: 34px; white-space: nowrap; }
+.site-sounds:hover,.site-sounds[aria-pressed=true] { color: var(--blue); border-color: currentColor; }
+.site-sounds .sound-waves,.site-sounds[aria-pressed=true] .sound-mute { display: none; }
+.site-sounds[aria-pressed=true] .sound-waves { display: inline; }
+@media (max-width: 1250px) { .site-sounds span { display: none; } }
 #siteSearch { width: min(640px, calc(100vw - 24px)); }
 #siteSearchTitle { margin: 0; font-size: 17px; }
 .site-search-body { padding: 18px 22px 22px; }
@@ -109,6 +114,7 @@
 }
 @media (max-width: 360px) {
   header:has(.site-search-form) { padding-inline: 12px; }
+  header:has(.site-search-form) > div { gap: 5px; }
   .hero-copy { min-width: 0; }
   .hero h1 { font-size: clamp(40px, 15vw, 54px); }
   .lab-fields { grid-template-columns: 1fr; }
