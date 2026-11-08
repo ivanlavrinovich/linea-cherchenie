@@ -1,6 +1,8 @@
 (() => {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const confettiColors = ['#66db9a','#86c9ff','#ffcf68','#c5a9ff','#f7f8ff'];
+  const rainDuration = 1500;
+  let rain, cleanup;
 
   function mark(container, correct, chosen) {
     [...container.querySelectorAll('button.answer')].forEach((button,index) => {
@@ -20,25 +22,37 @@
   }
 
   function burst(status, correct) {
+    clearTimeout(cleanup);
+    rain?.remove();
     if (reduced.matches || document.body.classList.contains('no-motion')) return;
-    status.querySelector('.feedback-burst')?.remove();
-    const burst = document.createElement('span');
-    burst.className = 'feedback-burst';
-    burst.setAttribute('aria-hidden','true');
-    for (let i = 0; i < (correct ? 18 : 7); i++) {
-      const particle = document.createElement('i');
-      const side = i % 2 === 0 ? -1 : 1;
+    const doc = status.ownerDocument;
+    const layer = doc.createElement('div');
+    layer.className = 'feedback-burst';
+    layer.setAttribute('aria-hidden','true');
+    if (typeof layer.showPopover === 'function') layer.setAttribute('popover','manual');
+    doc.body.append(layer);
+    if (layer.hasAttribute('popover')) layer.showPopover();
+    rain = layer;
+    layer.style.setProperty('--fall', (layer.clientHeight + 60) + 'px');
+    const count = Math.min(correct ? 132 : 94, Math.max(correct ? 48 : 34,
+      Math.round(layer.clientWidth / (correct ? 11 : 15))));
+    const particles = doc.createDocumentFragment();
+    for (let i = 0; i < count; i++) {
+      const particle = doc.createElement('i');
+      const delay = Math.round(Math.random()*380);
       particle.className = correct ? 'confetti-bit' : 'cross-bit';
-      particle.style.setProperty('--dx', (side*(16+Math.random()*99)) + 'px');
-      particle.style.setProperty('--dy', (-26-Math.random()*85) + 'px');
-      particle.style.setProperty('--spin', (side*(25+Math.random()*200)) + 'deg');
-      particle.style.setProperty('--delay', (i%4)*23 + 'ms');
+      particle.style.setProperty('--x', (100*(i+Math.random())/count) + '%');
+      particle.style.setProperty('--dx', ((Math.random()-.5)*80) + 'px');
+      particle.style.setProperty('--spin', ((Math.random()-.5)*680) + 'deg');
+      particle.style.setProperty('--size', (correct ? 6+Math.random()*7 : 16+Math.random()*14) + 'px');
+      particle.style.setProperty('--delay', delay + 'ms');
+      particle.style.setProperty('--duration', (rainDuration-delay) + 'ms');
       if (correct) particle.style.background = confettiColors[i%confettiColors.length];
       else particle.textContent = '×';
-      burst.append(particle);
+      particles.append(particle);
     }
-    status.append(burst);
-    setTimeout(() => burst.remove(), 1100);
+    layer.append(particles);
+    cleanup = setTimeout(() => { layer.remove(); rain = undefined; }, rainDuration);
   }
 
   window.lineaAnswerFeedback = { mark, setOutcome, burst };
