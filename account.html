@@ -127,7 +127,8 @@
  function renderStudy(){
   const state=read(studyKey), done=unitIds(state.done), saved=unitIds(state.saved);
   const notes=names.flatMap((_,i)=>typeof state.notes?.[i]==='string'&&state.notes[i].trim()?[[i,state.notes[i]]]:[]);
-  $('statDone').textContent=done.length+' / 7';$('statSaved').textContent=saved.length;$('statQuiz').textContent=typeof state.best==='number'?state.best+' / 14':'—';
+  $('statDone').textContent=done.length+' / 7';$('statSaved').textContent=saved.length;
+  $('statQuiz').textContent=Number.isInteger(state.best)?state.best+' / '+(state.bestTotal||14):'—';
   $('progressText').textContent=done.length+' / 7';$('progressFill').style.width=$('accountProgress').style.width=Math.min(100,done.length/7*100)+'%';
   $('resumeLesson').href=pages[state.last]||'index.html#course';
   items($('profileFavorites'),saved.filter(i=>names[i]).map(i=>[i,'']),'Пока пусто. Отметь раздел звёздочкой в программе курса.');
@@ -265,7 +266,11 @@
   }
   const savedStudy={done:unitIds(study.done),saved:unitIds(study.saved),notes,noMotion:study.noMotion===true,gray:study.gray===true};
   if(Number.isInteger(study.last)&&pages[study.last])savedStudy.last=study.last;
-  if(Number.isInteger(study.best)&&study.best>=0&&study.best<=14)savedStudy.best=study.best;
+  const quizTotal=Number.isInteger(study.bestTotal)&&study.bestTotal>=1&&study.bestTotal<=999?study.bestTotal:14;
+  if(Number.isInteger(study.best)&&study.best>=0&&study.best<=quizTotal){
+   savedStudy.best=study.best;
+   if(study.bestTotal===quizTotal)savedStudy.bestTotal=quizTotal;
+  }
   if(['small','normal','large'].includes(study.textSize))savedStudy.textSize=study.textSize;
   const ids=new Set();
   const gallery=raw.gallery.map(photo=>{

@@ -119,11 +119,15 @@
     options.forEach((option,i) => {
       const button = buttons[i];
       button.textContent = option;
-      button.disabled = answer !== undefined;
-      button.classList.toggle('correct', answer !== undefined && i === correct);
-      button.classList.toggle('wrong', answer === i && answer !== correct);
+      if (!window.lineaAnswerFeedback) {
+        button.disabled = answer !== undefined;
+        button.classList.toggle('correct', answer !== undefined && i === correct);
+        button.classList.toggle('wrong', answer === i && answer !== correct);
+      }
     });
-    feedback.textContent = answer === undefined ? '' : (response.correct ? 'Верно! +10 XP. ' : 'Ответ принят. ') + why +
+    window.lineaAnswerFeedback?.mark(answers,answer === undefined ? undefined : correct,answer);
+    window.lineaAnswerFeedback?.setOutcome(feedback,response?.correct);
+    feedback.textContent = answer === undefined ? '' : (response.correct ? '✓ Верно! +10 XP. ' : '× Неверно. Правильный ответ: «' + options[correct] + '». ') + why +
       (persisted ? '' : ' Браузер не сохранил результат.');
   }
   if (card) {
@@ -136,9 +140,13 @@
         if (!rendered.startsWith(today + ':')) { await recordVisit(); return; }
         for (const option of answers.children) option.disabled = true;
         if (session.last !== today) await recordVisit();
+        let correct;
         await change(current => {
-          if (current.answers[today] === undefined) current.answers[today] = { choice: i, correct: dailyQuestion(today)[2] === i };
+          if (current.answers[today] !== undefined) return;
+          correct = dailyQuestion(today)[2] === i;
+          current.answers[today] = { choice: i, correct };
         });
+        if (correct !== undefined) window.lineaAnswerFeedback?.burst(feedback,correct);
       };
       answers.append(button);
     }

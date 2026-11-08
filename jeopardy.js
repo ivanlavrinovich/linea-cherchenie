@@ -43,7 +43,10 @@
     const [prompt, options, correct, why] = questions[col];
     $('jeopardyTitle').textContent = `${topic} · ${cost}`;
     $('jeopardyPrompt').textContent = prompt;
-    $('jeopardyFeedback').textContent = '';
+    const feedback = $('jeopardyFeedback');
+    const effects = window.lineaAnswerFeedback;
+    feedback.textContent = '';
+    effects.setOutcome(feedback);
     const answers = $('jeopardyAnswers');
     answers.replaceChildren();
     options.forEach((option,i) => {
@@ -59,12 +62,10 @@
         const delta = ok ? cost : (team() ? -cost : 0);
         scores[turn] += delta;
         if (team()) turn = 1 - turn;
-        for (const [index, choice] of [...answers.children].entries()) {
-          choice.disabled = true;
-          if (index === correct) choice.classList.add('correct');
-          else if (index === i) choice.classList.add('wrong');
-        }
-        $('jeopardyFeedback').textContent = (ok ? `Верно! +${cost}. ` : 'Неверно. ') + why;
+        effects.mark(answers,correct,i);
+        effects.setOutcome(feedback,ok);
+        feedback.textContent = (ok ? `✓ Верно! +${cost}. ` : '× Неверно. Правильный ответ: «' + options[correct] + '». ') + why;
+        effects.burst(feedback,ok);
         cell.disabled = true;
         cell.textContent = ok ? '✓' : '—';
         summary();
