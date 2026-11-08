@@ -132,6 +132,7 @@
     $('errorFeedback').textContent = 'Верно. ' + active.why + (last ? ' Все три ошибки найдены.' : '');
     next.hidden = last;
     restart.hidden = !last;
+    if (last) window.lineaProgress?.award('error-game');
   }
   drawing.onclick = selectZone;
   drawing.onkeydown = e => {
@@ -210,7 +211,7 @@
   function hint() {
     const text = tool === 'angle'
       ? ['Поставь точку на первой стороне угла.', 'Теперь поставь вершину угла.', 'Поставь точку на второй стороне.'][steps.length]
-      : (steps.length ? 'Укажи вторую точку.' : 'Протяни линию или поставь две точки. Для окружности первая точка задаёт центр.');
+      : (steps.length ? 'Укажи вторую точку.' : tool === 'circle' ? 'Отметь центр, затем точку на окружности.' : 'Поставь две точки или протяни отрезок.');
     $('drawHint').textContent = text;
     undo.disabled = !shapes.length && !steps.length;
     clear.disabled = undo.disabled;
@@ -233,10 +234,10 @@
     if (!e.isPrimary || e.button !== 0) return;
     keyboard = false;
     point = position(e);
-    pointer = { id: e.pointerId, start: point, drag: !steps.length && tool !== 'angle' };
+    pointer = { id: e.pointerId, start: [e.clientX, e.clientY], drag: !steps.length && tool !== 'angle' };
     board.setPointerCapture(e.pointerId);
-    if (pointer.drag) addPoint(point);
-    else paint();
+    if (pointer.drag) steps.push(point);
+    paint();
   };
   board.onpointermove = e => {
     if (!e.isPrimary) return;
@@ -247,9 +248,9 @@
   board.onpointerup = e => {
     if (pointer?.id !== e.pointerId) return;
     point = position(e);
-    if (!pointer.drag || distance(pointer.start, point) > 4) addPoint(point);
+    if (!pointer.drag || distance(pointer.start, [e.clientX, e.clientY]) > 4) addPoint(point);
     pointer = null;
-    paint();
+    hint();
   };
   board.onlostpointercapture = () => {
     if (pointer?.drag) steps.pop();

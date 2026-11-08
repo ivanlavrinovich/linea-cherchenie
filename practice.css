@@ -1,0 +1,85 @@
+.compass-badge { display: inline-flex; align-items: center; flex: none; gap: 3px; border: 1px solid var(--line); border-radius: 7px; padding: 5px 6px; color: #8b96a8; font: 700 13px system-ui,sans-serif; text-decoration: none; }
+.compass-badge svg { display: block; width: 23px; height: 23px; overflow: visible; }
+.compass-badge .compass-decoration { display: none; }
+.compass-badge[data-active=true] { color: #4999ff; border-color: currentColor; }
+.compass-badge[data-active=true][data-stage="1"] { color: #00a8c4; }
+.compass-badge[data-active=true][data-stage="2"] { color: #a079ff; }
+.compass-badge[data-active=true][data-stage="3"] { color: #be850e; }
+.compass-badge[data-active=true][data-stage="4"] { color: #078e70; }
+:root[data-theme=dark] .compass-badge[data-active=true] svg { filter: drop-shadow(0 0 4px currentColor); }
+:root[data-theme=dark] .compass-badge[data-active=true][data-stage="1"] { color: #65e9ff; }
+:root[data-theme=dark] .compass-badge[data-active=true][data-stage="3"] { color: #ffd35f; }
+:root[data-theme=dark] .compass-badge[data-active=true][data-stage="4"] { color: #63ffca; }
+.compass-badge[data-stage="1"] .compass-orbit,.compass-badge[data-stage="2"] .compass-diamond,.compass-badge[data-stage="3"] .compass-laurel,.compass-badge[data-stage="4"] .compass-stars,.compass-badge[data-cycle="1"] .compass-spark { display: inline; }
+:root[data-xp-tier="1"] { --avatar-frame: #429cff; }
+:root[data-xp-tier="2"] { --avatar-frame: #eeb947; }
+:root[data-xp-tier="3"] { --avatar-frame: #5ef0e0; }
+:root:is([data-xp-tier="1"],[data-xp-tier="2"],[data-xp-tier="3"]) .profile-avatar { outline: 2px solid var(--avatar-frame); outline-offset: 1px; }
+:root[data-xp-tier="3"] .profile-avatar { box-shadow: 0 0 12px #5ef0e0a0; }
+.rank-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
+.rank-line strong { font-size: 23px; }
+.rank-line span { color: var(--blue); font-weight: 700; }
+.daily-card { display: grid; grid-template-columns: minmax(190px,1fr) minmax(0,1.7fr); gap: 18px 26px; margin: 38px 0; scroll-margin-top: 16px; }
+.daily-card h2 { margin: 5px 0; font-size: clamp(26px,4vw,38px); }
+.daily-card h3 { margin-bottom: 8px; }
+.daily-content p { color: var(--muted); }
+.daily-content .answer,.site-search-body .answer { padding: 10px 12px; margin: 6px 0; }
+.practice-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0; }
+.workshop :is(input,select) { max-width: 100%; }
+.sheet-grid { align-items: start; }
+.sheet-preview { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+#sheetPreview { display: grid; justify-items: center; margin-top: 8px; }
+#sheetPreview svg { display: block; width: auto; height: auto; max-width: 100%; max-height: 540px; background: white; }
+#printSheet { display: none; }
+.standard-search { display: grid; gap: 6px; max-width: 510px; }
+.standard-list { display: grid; gap: 16px; }
+.standard-card { display: grid; align-items: center; grid-template-columns: minmax(0,1fr) minmax(0,.92fr); gap: 18px; }
+.standard-card[hidden] { display: none; }
+.standard-card img { width: 100%; max-height: 270px; object-fit: contain; background: #0c1421; border-radius: 8px; }
+.quick-table { border-collapse: collapse; width: 100%; font-size: 14px; text-align: left; }
+.quick-table :is(td,th) { border-bottom: 1px solid var(--line); padding: 7px 6px; vertical-align: top; }
+.quick-table th { width: 35%; }
+.drawing-checklist { list-style: none; padding: 0; }
+.drawing-checklist li + li { border-top: 1px solid var(--line); }
+.drawing-checklist label { display: flex; align-items: baseline; gap: 9px; margin: 0; padding: 10px 4px; cursor: pointer; }
+.drawing-checklist input { width: 17px; height: 17px; flex: none; align-self: center; accent-color: var(--blue); }
+.drawing-checklist input:checked + span { text-decoration: line-through; color: var(--muted); }
+.jeopardy-mode { grid-auto-flow: column; align-items: center; margin: 0!important; }
+.jeopardy-board { width: 100%; border-spacing: 4px; table-layout: fixed; }
+.jeopardy-board th { font-size: clamp(11px,2vw,16px); overflow-wrap: anywhere; text-align: left; }
+.jeopardy-board button { width: 100%; min-height: 52px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink); background: var(--bg); font-weight: 700; font-size: clamp(15px,2.7vw,26px); }
+.jeopardy-board button:disabled { opacity: .5; }
+.jeopardy-board button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+#jeopardyTitle { margin: 0; }
+.ruler-panel { margin: 18px 0; break-inside: avoid; }
+.ruler-panel svg { display: block; width: 100%; max-width: 780px; border-radius: 8px; }
+#rulerObject { cursor: grab; touch-action: none; }
+#rulerObject:active { cursor: grabbing; }
+.ruler-controls label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.ruler-controls input { accent-color: var(--blue); width: min(220px,50vw); }
+#rulerDegrees { min-width: 4ch; font-variant-numeric: tabular-nums; }
+.chaos-notice { position: fixed; z-index: 210; right: 18px; bottom: 18px; max-width: min(320px,calc(100vw - 36px)); padding: 12px; border: 1px solid var(--blue); border-radius: 8px; background: var(--paper); color: var(--ink); }
+@keyframes compass-chaos {
+  0%,100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(2px) rotate(.85deg); }
+  75% { transform: translateX(-2px) rotate(-.85deg); }
+}
+.drawing-chaos:not(.no-motion) :is(.theory-figure img,.motion-canvas svg,.blueprint,.lab-diagram,.standard-card img,#rulerBoard) { animation: compass-chaos .56s ease-in-out infinite; outline: 1px solid var(--blue); }
+@media (max-width: 740px) {
+  .daily-card,.standard-card { grid-template-columns: 1fr; }
+  #drawHint { min-height: 3em; }
+}
+@media (max-width: 360px) {
+  .compass-badge { padding: 4px; font-size: 12px; }
+  .compass-badge svg { width: 19px; height: 19px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .drawing-chaos :is(.theory-figure img,.motion-canvas svg,.blueprint,.lab-diagram,.standard-card img,#rulerBoard) { animation: none!important; }
+}
+@media print {
+  .ruler-panel,.chaos-notice { display: none!important; }
+  body.printing-sheet > :not(#printSheet) { display: none!important; }
+  body.printing-sheet { margin: 0!important; padding: 0!important; }
+  #printSheet { display: block; margin: 0; padding: 0; }
+  #printSheet svg { display: block; max-width: none; }
+}
