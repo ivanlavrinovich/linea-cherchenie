@@ -121,7 +121,6 @@
   function selectZone(e) {
     const zone = e.target.closest('[data-zone]');
     if (!zone || solved) return;
-    window.lineaWorkshopSounds?.check();
     const active = exercises[exercise];
     if (Number(zone.dataset.zone) !== active.correct) {
       $('errorFeedback').textContent = 'Эта линия уместна. Проверь другой участок.';
