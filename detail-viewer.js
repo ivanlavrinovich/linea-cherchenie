@@ -32,9 +32,11 @@
     });
   }
   async function start() {
+    loading.hidden = false;
     loading.textContent = 'Загружаем 3D-модель…';
     try {
-      await Promise.all([loadScript('three-r160.min.js'),loadScript('detail-scenes.js')]);
+      const scenes = 'detail-scenes.js?v=3';
+      await Promise.all([loadScript('three-r160.min.js'),loadScript(scenes)]);
       makeViewer(window.THREE,window.lineaModelScene);
     } catch {
       root.dataset.render = 'unavailable';
@@ -51,10 +53,22 @@
   } else start();
 
   function makeViewer(T, build) {
-    const { group, pickables, apertures, materials } = build(root.dataset.model,T);
+    const { group, pickables, apertures, materials, assembly } = build(root.dataset.model,T);
+    const spread = root.querySelector('[data-spread]');
+    const spreadValue = root.querySelector('[data-spread-value]');
+    const assemblyControls = [...root.querySelectorAll('[data-assembly], [data-spread]')];
+    const lesson = root.dataset.model !== 'planetary';
+    let playing = false, inView = true, lastTime, angle = 0;
     const bounds = new T.Box3().setFromObject(group);
-    const radius = bounds.getBoundingSphere(new T.Sphere()).radius;
-    group.position.sub(bounds.getCenter(new T.Vector3()));
+    const fitted = bounds.getBoundingSphere(new T.Sphere());
+    const expanded = new T.Sphere();
+    if (lesson) {
+      assembly.spread(1);
+      new T.Box3().setFromObject(group).getBoundingSphere(expanded);
+      assembly.spread(0);
+    }
+    const radius = fitted.radius;
+    group.position.copy(fitted.center).negate();
     const model = new T.Group();
     model.add(group);
     const scene = new T.Scene();
@@ -66,7 +80,7 @@
     rim.position.set(4,-2,-3);
     scene.add(rim);
 
-    const camera = new T.OrthographicCamera(-1,1,1,-1,.01,radius*12);
+    const camera = new T.OrthographicCamera(-1,1,1,-1,.01,Math.max(radius,expanded.radius)*12);
     camera.position.z = radius*5;
     camera.updateMatrixWorld();
     const renderer = new T.WebGLRenderer({ alpha:true, antialias:true, powerPreference:'low-power' });
@@ -77,7 +91,9 @@
     canvas.setAttribute('aria-label','Вращаемая 3D-модель');
     canvas.setAttribute('aria-describedby','model3d-help');
     stage.prepend(canvas);
-    const initial = new T.Quaternion().setFromEuler(new T.Euler(-Math.asin(1/Math.sqrt(3)),Math.PI/4,0,'XYZ'));
+    const initial = new T.Quaternion().setFromEuler(!lesson
+      ? new T.Euler(-.38,.47,-.18)
+      : new T.Euler(-Math.asin(1/Math.sqrt(3)),Math.PI/4,0,'XYZ'));
     const ray = new T.Raycaster();
     const point = new T.Vector2();
     const motion = new T.Quaternion();
@@ -92,9 +108,16 @@
       }
       canvas.style.cursor = pointers.size ? 'grabbing' : (hovering ? 'pointer' : '');
     }
-    function draw() {
+    function draw(time) {
       frame = 0;
       if (contextLost) return;
+      if (playing && inView) {
+        if (lastTime !== undefined) {
+          angle = (angle + Math.min(time-lastTime,50)*.0011) % (6*Math.PI);
+          assembly.spin(angle);
+        }
+        lastTime = time;
+      }
       if (pending) {
         const { x,y } = pending;
         pending = undefined;
@@ -102,12 +125,18 @@
       }
       setHighlight(hovering || selected);
       renderer.render(scene,camera);
+      if (playing && inView) render();
     }
     function resize() {
       const width = stage.clientWidth, height = stage.clientHeight;
       if (!width || !height) return;
       renderer.setSize(width,height,false);
-      const aspect = width / height, half = radius * 1.12 * Math.max(1,1/aspect);
+      const aspect = width / height;
+      const amount = Number(spread.value)/100;
+      const framing = lesson
+        ? 1.12*T.MathUtils.lerp(radius,expanded.radius,amount)
+        : radius*(.87 + amount*.35);
+      const half = framing * Math.max(1,1/aspect);
       camera.left = -half*aspect;
       camera.right = half*aspect;
       camera.top = half;
@@ -132,7 +161,8 @@
       point.set(2*(x-rect.left)/rect.width-1,1-2*(y-rect.top)/rect.height);
       model.updateMatrixWorld(true);
       ray.setFromCamera(point,camera);
-      const hit = ray.intersectObjects(pickables,false)[0] || ray.intersectObjects(apertures,false)[0];
+      const visible = hits => hits.find(hit => assembly?.housing.visible !== false || hit.object.userData.part !== 'housing');
+      const hit = visible(ray.intersectObjects(pickables,false)) || visible(ray.intersectObjects(apertures,false));
       return hit?.object.userData.part;
     }
     function showHint(id,x,y) {
@@ -212,7 +242,7 @@
     canvas.onlostpointercapture = cancelPointer;
     canvas.onpointerleave = e => { if (e.pointerType === 'mouse' && !pointers.size) clearHover(); };
     canvas.addEventListener('wheel', e => {
-      if (e.ctrlKey || e.metaKey || contextLost) return;
+      if (e.ctrlKey || e.metaKey || contextLost || (assembly && !e.shiftKey)) return;
       e.preventDefault();
       clearHover();
       zoom(camera.zoom*Math.exp(-Math.sign(e.deltaY)*.11));
@@ -230,7 +260,7 @@
         motion.setFromAxisAngle(first.set(x,y,z),angle);
         model.quaternion.premultiply(motion).normalize();
         clearHover();
-      } else if (key === 'Home') view(initial);
+      } else if (key === 'Home') reset();
       else if (key === '+' || key === '=') zoom(camera.zoom*1.2);
       else if (key === '-' || key === '−') zoom(camera.zoom/1.2);
       else if (key === 'Escape') {
@@ -239,21 +269,74 @@
       } else return;
       e.preventDefault();
     };
+    function reset() {
+      if (assembly) {
+        setPlaying(false);
+        angle = 0;
+        assembly.spin(angle);
+        spread.value = '0';
+        setSpread();
+        setHousing(true);
+        if (selected) select(selected);
+      }
+      view(initial);
+    }
+    function setPlaying(value) {
+      playing = value;
+      lastTime = undefined;
+      root.querySelector('[data-assembly="play"]').setAttribute('aria-pressed', String(playing));
+      render();
+    }
+    function setSpread() {
+      spreadValue.textContent = spread.value + '%';
+      const amount = Number(spread.value)/100;
+      assembly.spread(amount);
+      if (lesson) group.position.lerpVectors(fitted.center,expanded.center,amount).negate();
+      clearHover();
+      resize();
+    }
+    function setHousing(visible) {
+      assembly.housing.visible = visible;
+      const button = root.querySelector('[data-assembly="housing"]');
+      button.setAttribute('aria-pressed', String(!visible));
+      if (button.dataset.targetLabel) {
+        button.textContent = (visible ? 'Скрыть ' : 'Показать ') + button.dataset.targetLabel;
+      }
+      if (!visible && selected === 'housing') select(selected);
+      clearHover();
+    }
+    if (assembly) {
+      spread.oninput = setSpread;
+      root.querySelector('[data-assembly="play"]').onclick = () => setPlaying(!playing);
+      root.querySelector('[data-assembly="housing"]').onclick = () => setHousing(!assembly.housing.visible);
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(([entry]) => {
+          inView = entry.isIntersecting;
+          lastTime = undefined;
+          if (playing && inView) render();
+        });
+        observer.observe(stage);
+      }
+    }
     for (const button of controls) button.onclick = () => {
       const action = button.dataset.view;
       if (action === 'front') view(new T.Quaternion());
-      else if (action === 'reset') view(initial);
+      else if (action === 'side') view(new T.Quaternion().setFromAxisAngle(first.set(0,1,0),Math.PI/2));
+      else if (action === 'rear') view(new T.Quaternion().setFromAxisAngle(first.set(0,1,0),Math.PI));
+      else if (action === 'iso') view(initial);
+      else if (action === 'reset') reset();
       else zoom(action === 'in' ? camera.zoom*1.2 : camera.zoom/1.2);
     };
     function status(ready,message) {
       root.dataset.render = ready ? 'ready' : 'unavailable';
       loading.hidden = ready;
       if (message) loading.textContent = message;
-      for (const button of controls) button.disabled = !ready;
+      for (const control of [...controls,...assemblyControls]) control.disabled = !ready;
     }
     canvas.addEventListener('webglcontextlost', e => {
       e.preventDefault();
       contextLost = true;
+      if (assembly) setPlaying(false);
       pointers.clear();
       clearHover();
       status(false,'3D-вид временно недоступен. Описание частей можно открыть в списке.');
@@ -263,7 +346,10 @@
       status(true);
       resize();
     });
-    highlight = () => { clearHover(); render(); };
+    highlight = id => {
+      if (id === 'housing' && assembly?.housing.visible === false) setHousing(true);
+      clearHover();
+    };
     new ResizeObserver(resize).observe(stage);
     view(initial);
     resize();

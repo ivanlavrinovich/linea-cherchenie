@@ -97,130 +97,314 @@
     return { group, pickables, apertures, materials, part, line, contour, face, wall, opening, plate, box, finish };
   }
 
-  function mountingPlate(T) {
-    const scene = factory(T,{ face:0x80b7ea, edge:0x526f98, holes:0x438ba7 });
-    const fasteners = [-1.18,1.18].flatMap(x => [-.69,.69].map(y => roundHole(.21,x,y)));
-    scene.plate(scene.group,rounded(3.35,2.24,.23),fasteners,-.23,.23,'face','edge');
-    return scene;
-  }
-  function flange(T) {
-    const scene = factory(T,{ disk:0x6597ce, hub:0x79c8ea, bore:0x48789f, holes:0x4fadc2 });
-    const {group,face,wall,contour,opening} = scene;
-    const outer = circle(1.57), bore = circle(.42), hub = circle(.73);
-    const bolts = [Math.PI/2,Math.PI/2 + TAU/3,Math.PI/2 + 2*TAU/3].map(a =>
-      roundHole(.175,1.09*Math.cos(a),1.09*Math.sin(a)));
-    face(group,outer,[bore,...bolts.map(h=>h.loop)],-.39,'disk');
-    face(group,outer,[hub,...bolts.map(h=>h.loop)],.10,'disk');
-    wall(group,outer,-.39,.10,'disk');
-    wall(group,hub,.10,.64,'hub');
-    face(group,hub,[bore],.64,'hub');
-    wall(group,bore,-.39,.64,'bore');
-    opening(group,bore,-.39,'bore');
-    opening(group,bore,.64,'bore');
-    for (const h of bolts) {
-      wall(group,h.loop,-.39,.10,h.id);
-      contour(group,h.loop,-.39);
-      contour(group,h.loop,.10);
-      opening(group,h.loop,-.39,h.id);
-      opening(group,h.loop,.10,h.id);
+  function lessonAssembly(T, palette, design) {
+    const scene = factory(T, { housing: 0x5c7ea8, ...palette });
+    const components = [];
+    const housing = component(-.85);
+    function component(z, dx = 0) {
+      const item = new T.Group();
+      scene.group.add(item);
+      components.push({ item, offset: new T.Vector3(dx, 0, z) });
+      return item;
     }
-    for (const [loop,z] of [[outer,-.39],[outer,.10],[hub,.10],[hub,.64],[bore,-.39],[bore,.64]]) contour(group,loop,z);
-    return scene;
-  }
-  function steppedSupport(T) {
-    const scene = factory(T,{ base:0x6099d1, step:0x9ac8ee, slot:0x43829f });
-    const profile = [[-1.63,-1.02],[1.32,-1.02],[1.63,-.71],[1.63,1.02],[-1.63,1.02]];
-    const slot = [...arc(.235,-Math.PI/2,Math.PI/2,14,.65,-.34),...arc(.235,Math.PI/2,3*Math.PI/2,14,-.56,-.34)];
-    scene.plate(scene.group,profile,[hole(slot,'slot')],-.63,-.07,'base');
-    scene.box(scene.group,2.63,.81,.98,-.02,.61,.42,'step');
-    return scene;
-  }
-  function bracket(T) {
-    const scene = factory(T,{ foot:0x638fc5, wall:0x92bde7, rib:0x55b8cb, holes:0x4487a0 });
-    scene.plate(scene.group,rounded(3.0,2.2,.18),[-.94,.94].map(x=>roundHole(.225,x,-.49)),-.83,-.52,'foot');
-    scene.box(scene.group,3,.34,1.86,0,.91,.41,'wall');
-    const rib = new T.Group();
-    scene.group.add(rib);
-    rib.rotation.y = -Math.PI/2;
-    scene.plate(rib,[[-.52,-.82],[-.52,.74],[1.13,.74]],[],-.15,.15,'rib');
-    return scene;
-  }
-  function bushing(T) {
-    const scene = factory(T,{ shell:0x5e98cf, end:0x9ecaf2, bore:0x507da7, keyway:0x53b8cf });
-    const {group,face,wall,contour} = scene;
-    const outer = circle(1.13), radius = .59, half = .16;
-    const angle = Math.asin(half/radius);
-    const curvedBore = arc(radius,angle,TAU-angle,48);
-    const key = [curvedBore.at(-1),[.83,-half],[.83,half],curvedBore[0]];
-    const opening = [...curvedBore,...key.slice(1,-1)];
-    for (const z of [-.83,.83]) {
-      face(group,outer,[opening],z,'end');
-      contour(group,outer,z);
-      contour(group,opening,z);
-      scene.opening(group,opening,z,'bore');
+    function ring(parent, outer, inner, low, high, id, extra = [], segments = 64) {
+      scene.plate(parent, circle(outer, 0, 0, segments),
+        [...(inner ? [roundHole(inner, 0, 0, id)] : []), ...extra], low, high, id);
     }
-    wall(group,outer,-.83,.83,'shell');
-    wall(group,curvedBore,-.83,.83,'bore',false);
-    wall(group,key,-.83,.83,'keyway',false);
-    for (const [x,y] of key) scene.line(group,[[x,y,-.83],[x,y,.83]]);
-    return scene;
-  }
-  function cutaway(T) {
-    const scene = factory(T,{ shell:0x679dd1, cut:0x83c5d6, bore:0x517fad, seat:0xb0d7f0 });
-    const {group,part,line} = scene;
-    const profile = [[.49,-1.0],[1.34,-1.0],[1.34,.65],[1.19,.94],[.82,.94],[.82,.16],[.49,.16]];
-    const ids = ['shell','shell','shell','shell','bore','seat','bore'];
-    const start = 3*Math.PI/2, end = 3*Math.PI, slices = 48;
-    const sample = (r,z,a) => [r*Math.cos(a),r*Math.sin(a),z];
-    for (let i = 0; i < profile.length; i++) {
-      const [r,z] = profile[i], [s,w] = profile[(i+1)%profile.length];
-      const positions = [];
-      for (let j = 0; j < slices; j++) {
-        const a = start+(end-start)*j/slices, b = start+(end-start)*(j+1)/slices;
-        const v0=sample(r,z,a),v1=sample(r,z,b),v2=sample(s,w,b),v3=sample(s,w,a);
-        positions.push(...v0,...v1,...v2,...v0,...v2,...v3);
+    function spindle(parent, radii, id) {
+      const points = radii.map(([radius, z]) => new T.Vector2(radius, z));
+      const geometry = new T.LatheGeometry(points, 64);
+      geometry.rotateX(Math.PI / 2);
+      scene.part(parent, geometry, id);
+      for (const [radius, z] of radii) {
+        if (radius) scene.contour(parent, circle(radius, 0, 0, 64), z);
       }
-      const geometry = new T.BufferGeometry();
-      geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));
-      geometry.computeVertexNormals();
-      part(group,geometry,ids[i]);
-      line(group,arc(r,start,end,slices).map(([x,y])=>[x,y,z]));
     }
-    for (const angle of [start,end]) {
-      const geometry = new T.ShapeGeometry(new T.Shape(profile.map(([r,z])=>new T.Vector2(r,z))));
-      const coordinates = geometry.getAttribute('position');
-      for (let i = 0; i < coordinates.count; i++) coordinates.setXYZ(i,...sample(coordinates.getX(i),coordinates.getY(i),angle));
-      geometry.computeVertexNormals();
-      part(group,geometry,'cut');
-      line(group,profile.map(([r,z])=>sample(r,z,angle)),true);
+    function thread(parent, radius, low, high) {
+      const turns = (high - low) / .10;
+      const samples = arc(radius, 0, turns * TAU, Math.ceil(turns * 24));
+      scene.line(parent, samples.map(([x,y], i) => [x,y,low + (high-low)*i/(samples.length-1)]),
+        false, scene.finish);
     }
-    return scene;
-  }
-  function studJoint(T) {
-    const scene = factory(T,{ housing:0x5c88bc, cover:0x79a9df, stud:0x90bddf, washer:0x67becf, nut:0xadcce8 });
-    const {group,face,wall,contour,plate,line,finish} = scene;
-    const body = rounded(2.52,1.98,.22), bottomBore = circle(.232);
-    face(group,body,[],-1.42,'housing');
-    face(group,body,[bottomBore],-.82,'housing');
-    wall(group,body,-1.42,-.82,'housing');
-    wall(group,bottomBore,-1.28,-.82,'housing');
-    face(group,bottomBore,[],-1.28,'housing');
-    contour(group,body,-1.42);
-    contour(group,body,-.82);
-    contour(group,bottomBore,-.82);
-    plate(group,rounded(2.28,1.74,.20),[roundHole(.29,0,0,'cover')],-.55,-.30,'cover');
-    plate(group,circle(.61),[roundHole(.27,0,0,'washer')],.02,.125,'washer');
-    plate(group,circle(.48,0,0,6),[roundHole(.238,0,0,'nut')],.47,.82,'nut');
-    plate(group,circle(.208),[],-1.19,1.15,'stud');
-    for (const [low,high] of [[-1.16,-.76],[.37,1.12]]) {
-      const length = high-low;
-      const turns = length / .09;
-      const thread = arc(.213,0,turns*TAU,Math.ceil(turns*20)).map(([x,y],i,points)=>[x,y,low+length*i/(points.length-1)]);
-      line(group,thread,false,finish);
+    function boltCircle(count, radius, bore, id, phase = 0) {
+      return Array.from({ length: count }, (_, i) => {
+        const angle = phase + i * TAU / count;
+        return roundHole(bore, radius*Math.cos(angle), radius*Math.sin(angle), id);
+      });
     }
-    return scene;
+    const animate = design({ ...scene, housing, component, ring, spindle, thread, boltCircle });
+    let distance = 0, phase = 0;
+    function update() {
+      for (const { item, offset } of components) item.position.set(0, 0, 0).addScaledVector(offset, distance);
+      animate(phase, distance);
+    }
+    // Component geometry uses the assembly datum; parent groups carry only the separation offset.
+    return {
+      ...scene,
+      assembly: {
+        housing,
+        spread(amount) { distance = amount; update(); },
+        spin(angle) { phase = angle; update(); },
+      },
+    };
   }
 
-  const models = { plate: mountingPlate, flange, step: steppedSupport, bracket, bushing, cutaway, stud: studJoint };
+  function fixture(T) {
+    return lessonAssembly(T, { guide:0x59a8c0, pad:0xdba76b, cam:0xf3bb71, pin:0xafcce4 }, s => {
+      const { housing, component, plate, box, ring, spindle } = s;
+      const guide = component(.38), pad = component(.94);
+      const cam = component(1.64), pin = component(2.33);
+      const holes = [-1.51,1.51].flatMap(x => [-.89,.89].map(y => roundHole(.16,x,y,'housing')));
+      plate(housing,rounded(3.65,2.44,.24),holes,-.65,-.35,'housing');
+      for (const y of [-.70,.70]) box(guide,2.62,.27,.30,0,y,-.20,'guide');
+      ring(guide,.45,.17,-.35,-.29,'guide');
+      box(pad,.47,.77,.22,1.03,0,-.18,'pad');
+      plate(cam,circle(.54,.23,0),[roundHole(.172,0,0,'cam')],-.29,-.05,'cam');
+      spindle(pin,[[0,-.33],[.163,-.33],[.163,-.04],[.28,-.04],[.28,.13],[0,.13]],'pin');
+      return (angle, spread) => {
+        cam.rotation.z = angle;
+        pad.position.x += (.54 + .23*Math.cos(angle) - .77) * (1-.7*spread);
+      };
+    });
+  }
+
+  function rotaryTable(T) {
+    return lessonAssembly(T, { collar:0x64b9bd, table:0x6baef1, shaft:0xe4ad70, cap:0xc4d7e9 }, s => {
+      const { housing, component, ring, spindle, boltCircle, line } = s;
+      const collar = component(.4), table = component(1.26);
+      const shaft = component(2.42), cap = component(3.35);
+      ring(housing,1.67,.36,-.58,-.31,'housing',boltCircle(4,1.40,.13,'housing',Math.PI/4));
+      ring(collar,.80,.36,-.31,.14,'collar');
+      ring(table,1.56,.36,.14,.43,'table',boltCircle(6,1.10,.145,'table',Math.PI/6));
+      for (let i=0; i<24; i++) {
+        const angle=i*TAU/24;
+        line(table,[(i%6===0 ? 1.33 : 1.42),1.52].map(r=>[r*Math.cos(angle),r*Math.sin(angle),.432]),false,s.finish);
+      }
+      spindle(shaft,[[0,-.64],[.343,-.64],[.343,.50],[.26,.57],[0,.57]],'shaft');
+      ring(cap,.51,.347,.43,.52,'cap');
+      return angle => { table.rotation.z = shaft.rotation.z = cap.rotation.z = angle; };
+    });
+  }
+
+  function crossSlide(T) {
+    return lessonAssembly(T, { rails:0x62a5bc, slide:0x87bbf0, screw:0xd4e0ed, wheel:0xe5ad63 }, s => {
+      const { housing, component, plate, box, spindle, ring, thread } = s;
+      const rails = component(.48), slide = component(1.16);
+      const screw = component(.20,1.35), wheel = component(.25,2.05);
+      const feet = [-1.52,1.52].flatMap(x => [-.86,.86].map(y => roundHole(.16,x,y,'housing')));
+      plate(housing,rounded(3.62,2.32,.23),feet,-.67,-.39,'housing');
+      for (const y of [-.66,.66]) box(rails,2.73,.32,.36,0,y,-.21,'rails');
+      const outline = [[-.80,-.9],[.57,-.9],[.80,-.67],[.80,.9],[-.8,.9]];
+      const slot = [...arc(.15,-Math.PI/2,Math.PI/2,12,.35,0),...arc(.15,Math.PI/2,3*Math.PI/2,12,-.35,0)];
+      plate(slide,outline,[hole(slot,'slide'),...[-.60,.60].map(y=>roundHole(.13,0,y,'slide'))],-.03,.28,'slide');
+      const rod = new T.Group(), handle = new T.Group();
+      for (const [parent,child] of [[screw,rod],[wheel,handle]]) {
+        parent.add(child);
+        child.rotation.y = Math.PI/2;
+        child.position.z = -.21;
+      }
+      spindle(rod,[[0,-1.42],[.115,-1.42],[.115,1.73],[0,1.73]],'screw');
+      thread(rod,.117,-1.34,1.42);
+      ring(handle,.36,.116,1.48,1.71,'wheel',[],12);
+      ring(handle,.42,.116,1.71,1.86,'wheel',[],12);
+      return (angle, spread) => {
+        slide.position.x += .44*Math.sin(angle)*(1-.7*spread);
+        rod.rotation.z = handle.rotation.z = angle;
+      };
+    });
+  }
+
+  function rollerBracket(T) {
+    return lessonAssembly(T, { cheek:0x7ea9d5, roller:0x53b6ba, axle:0xc3d8ec, collars:0xe2af72 }, s => {
+      const { housing, component, plate, ring, spindle, box, boltCircle } = s;
+      const cheek = component(.6), roller = component(1.24);
+      const axle = component(2.88), collars = component(3.40);
+      box(housing,2.85,.35,1.78,0,-.97,0,'housing');
+      const profile = [[-.87,-.795],[.87,-.795],...arc(.87,0,Math.PI,24,0,.09)];
+      for (const [parent, low, high, id] of [[housing,-.78,-.54,'housing'],[cheek,.54,.78,'cheek']]) {
+        plate(parent,profile,[roundHole(.21,0,.09,id)],low,high,id);
+      }
+      const moving = new T.Group();
+      moving.position.y = .09;
+      roller.add(moving);
+      ring(moving,.67,.226,-.53,-.37,'roller',boltCircle(4,.46,.081,'roller'));
+      ring(moving,.56,.226,-.37,.37,'roller');
+      ring(moving,.67,.226,.37,.53,'roller',boltCircle(4,.46,.081,'roller'));
+      const pin = new T.Group();
+      pin.position.y = .09;
+      axle.add(pin);
+      spindle(pin,[[0,-.87],[.202,-.87],[.202,.94],[0,.94]],'axle');
+      const locks = new T.Group();
+      locks.position.y = .09;
+      collars.add(locks);
+      ring(locks,.30,.205,.78,.94,'collars',[],6);
+      ring(housing,.29,.205,-.86,-.78,'housing');
+      return angle => { moving.rotation.z = angle; };
+    });
+  }
+
+  function keyedDrive(T) {
+    return lessonAssembly(T, { bush:0x57babc, shaft:0xa4c9ed, key:0xefb26a, retainer:0x778fc5 }, s => {
+      const { housing, component, plate, ring, spindle, box, boltCircle } = s;
+      const bush = component(.44), shaft = component(1.60);
+      const key = component(1.60), retainer = component(2.66);
+      ring(housing,1.36,.91,-.52,-.22,'housing',boltCircle(4,1.12,.103,'housing',Math.PI/4));
+      ring(housing,1.07,.91,-.22,.45,'housing');
+      const angle = Math.asin(.115/.48);
+      const slot = [...arc(.48,angle,TAU-angle,58),[.62,-.115],[.62,.115]];
+      const shaftAngle = Math.asin(.108/.457);
+      const shaftProfile = [...arc(.457,shaftAngle,TAU-shaftAngle,58),[.354,-.108],[.354,.108]];
+      plate(bush,circle(.895),[hole(slot,'bush')],-.51,.52,'bush');
+      plate(shaft,shaftProfile,[],-.61,.57,'shaft');
+      spindle(shaft,[[0,-.84],[.34,-.84],[.414,-.61],[0,-.61]],'shaft');
+      spindle(shaft,[[0,.57],[.423,.57],[.423,.89],[.35,1.00],[0,1.00]],'shaft');
+      const keyBar = new T.Group();
+      key.add(keyBar);
+      box(keyBar,.253,.212,.95,.482,0,.03,'key');
+      ring(retainer,1.00,.434,.52,.66,'retainer');
+      return (angle, spread) => {
+        bush.rotation.z = shaft.rotation.z = keyBar.rotation.z = angle;
+        key.position.x = .92*T.MathUtils.smoothstep(spread,.84,1);
+      };
+    });
+  }
+
+  function pistonCutaway(T) {
+    return lessonAssembly(T, { piston:0xe3a366, seal:0x58c4bd, rod:0xb5d5ee, cap:0x759bd0 }, s => {
+      const { housing, component, plate, ring, spindle, boltCircle } = s;
+      const piston = component(.94), seal = component(1.50);
+      const rod = component(2.02), cap = component(3.04);
+      const sector = (outer,inner) => [...arc(outer,Math.PI/2,TAU,60),...arc(inner,TAU,Math.PI/2,60)];
+      ring(housing,1.27,0,-1.27,-1.05,'housing',boltCircle(4,1.02,.105,'housing',Math.PI/4));
+      plate(housing,sector(1.06,.79),[],-1.05,.72,'housing');
+      plate(housing,sector(1.24,1.06),[],.49,.72,'housing');
+      ring(piston,.75,.25,-.51,-.33,'piston');
+      ring(piston,.68,.25,-.33,-.18,'piston');
+      ring(piston,.75,.25,-.18,.02,'piston');
+      ring(seal,.775,.681,-.32,-.19,'seal');
+      spindle(rod,[[0,-.57],[.241,-.57],[.241,1.31],[.20,1.43],[0,1.43]],'rod');
+      ring(cap,1.24,.255,.72,.91,'cap',boltCircle(4,1.03,.10,'cap',Math.PI/4));
+      return (angle, spread) => {
+        const stroke = .32*Math.sin(angle)*(1-.7*spread);
+        for (const moving of [piston,seal,rod]) moving.position.z += stroke;
+      };
+    });
+  }
+
+  function twinStudJoint(T) {
+    return lessonAssembly(T, { gasket:0x60babc, cover:0x83b7e8, studs:0xaac9df, washers:0xd0daeb, nuts:0xe7ac69 }, s => {
+      const { housing, component, plate, ring, spindle, thread } = s;
+      const gasket = component(.45), cover = component(1.02);
+      const studs = component(1.95), washers = component(2.63), nuts = component(3.35);
+      const holes = (radius,id) => [-1.07,1.07].map(x => roundHole(radius,x,0,id));
+      const profile = rounded(3.44,2.02,.32);
+      plate(housing,profile,holes(.184,'housing'),-.89,-.32,'housing');
+      plate(gasket,profile,holes(.207,'gasket'),-.32,-.26,'gasket');
+      plate(cover,profile,holes(.207,'cover'),-.26,.02,'cover');
+      const nutGroups = [];
+      for (const x of [-1.07,1.07]) {
+        const stud = new T.Group(), washer = new T.Group(), nut = new T.Group();
+        for (const [parent,part] of [[studs,stud],[washers,washer],[nuts,nut]]) {
+          parent.add(part);
+          part.position.x = x;
+        }
+        spindle(stud,[[0,-.83],[.175,-.83],[.175,.51],[.144,.55],[0,.55]],'studs');
+        thread(stud,.179,-.81,-.33);
+        thread(stud,.179,.02,.52);
+        ring(washer,.32,.20,.02,.10,'washers');
+        ring(nut,.33,.185,.10,.34,'nuts',[],6);
+        nutGroups.push(nut);
+      }
+      return angle => {
+        const turn = .8*(1-Math.cos(angle));
+        for (const nut of nutGroups) {
+          nut.rotation.z = turn;
+          nut.position.z = .10*turn/TAU;
+        }
+      };
+    });
+  }
+
+  function planetary(T) {
+    const scene = factory(T, { housing: 0x6983aa, sun: 0x45bafa, planets: 0xe5a059, carrier: 0x3e9d9c, shafts: 0xaac4df });
+    const { group, plate, materials } = scene;
+    function layer(parent = group) {
+      const item = new T.Group();
+      parent.add(item);
+      return item;
+    }
+    function teeth(count, root, tip, phase = 0) {
+      return Array.from({ length: count }, (_, index) =>
+        [[-.5, root], [-.30, root], [-.17, tip], [.17, tip], [.30, root]].map(([step, radius]) => {
+          const angle = phase + (index + step) * TAU / count;
+          return [radius * Math.cos(angle), radius * Math.sin(angle)];
+        })).flat();
+    }
+    const housing = layer();
+    const flangeHoles = Array.from({ length: 8 }, (_, index) => {
+      const angle = index * TAU / 8;
+      return roundHole(.09, 2.10 * Math.cos(angle), 2.10 * Math.sin(angle), 'housing');
+    });
+    plate(housing, circle(2.30, 0, 0, 96), [roundHole(1.91, 0, 0, 'housing'), ...flangeHoles], -.82, -.60, 'housing');
+    plate(housing, circle(2.00, 0, 0, 96), [hole(teeth(48, 1.88, 1.735), 'housing')], -.60, .28, 'housing');
+    plate(housing, circle(2.07, 0, 0, 96), [roundHole(1.91, 0, 0, 'housing')], .28, .37, 'housing');
+
+    const sun = layer();
+    plate(sun, teeth(24, .82, .958), [], -.21, .22, 'sun');
+    plate(sun, circle(.30), [], .22, .46, 'sun');
+    plate(sun, circle(.21), [], .46, .87, 'shafts');
+    plate(sun, circle(.235, 0, 0, 6), [], .87, .96, 'shafts');
+
+    const carrier = layer();
+    const planets = layer();
+    const orbit = 1.35;
+    const gears = [];
+    const carrierProfile = [];
+    for (let index = 0; index < 3; index++) {
+      const angle = index * TAU / 3;
+      const x = orbit * Math.cos(angle), y = orbit * Math.sin(angle);
+      carrierProfile.push(...arc(.25, angle - Math.PI / 3, angle + Math.PI / 3, 10, x, y));
+      const gear = layer(planets);
+      gear.position.set(x, y, 0);
+      plate(gear, teeth(12, .37, .508, Math.PI / 12), [roundHole(.155, 0, 0, 'planets')], -.21, .22, 'planets');
+      const pin = layer(carrier);
+      pin.position.set(x, y, 0);
+      plate(pin, circle(.143), [], -.42, .23, 'shafts');
+      plate(pin, circle(.197), [], .23, .30, 'shafts');
+      plate(pin, circle(.113, 0, 0, 6), [], .30, .35, 'shafts');
+      gears.push(gear);
+    }
+    plate(carrier, carrierProfile, [roundHole(.16, 0, 0, 'carrier')], -.62, -.42, 'carrier');
+    plate(carrier, circle(.34), [], -.84, -.62, 'carrier');
+    plate(carrier, circle(.23), [], -1.16, -.84, 'shafts');
+    for (const material of Object.values(materials)) {
+      material.roughness = .42;
+      material.metalness = .24;
+    }
+    return {
+      ...scene,
+      assembly: {
+        housing,
+        spread(amount) {
+          housing.position.z = -1.10 * amount;
+          carrier.position.z = -2.55 * amount;
+          planets.position.z = .78 * amount;
+          sun.position.z = 2.50 * amount;
+          gears.forEach((gear, index) => {
+            const direction = index * TAU / 3;
+            const distance = orbit + .30 * amount;
+            gear.position.set(distance * Math.cos(direction), distance * Math.sin(direction), 0);
+          });
+        },
+        spin(angle) {
+          sun.rotation.z = angle;
+          carrier.rotation.z = planets.rotation.z = angle / 3;
+          for (const gear of gears) gear.rotation.z = -4 * angle / 3;
+        },
+      },
+    };
+  }
+
+  const models = { plate: fixture, flange: rotaryTable, step: crossSlide, bracket: rollerBracket, bushing: keyedDrive, cutaway: pistonCutaway, stud: twinStudJoint, planetary };
   window.lineaModelScene = (key, three) => models[key](three);
 })();

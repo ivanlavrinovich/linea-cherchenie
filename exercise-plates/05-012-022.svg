@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="660" viewBox="0 0 1320 660" role="img" aria-labelledby="title">
+  <title id="title">Два вида детали «Палец» и место для сечений А–А и Б–Б</title>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0L12 4 0 8Z" fill="#172b44"/>
+    </marker>
+  </defs>
+  <g font-family="Arial,sans-serif" fill="#172b44">
+    <text x="44" y="46" font-size="25">Построй и обозначь заданные сечения.</text>
+    <text x="44" y="83" font-size="25">Подпиши конструктивные элементы детали на полках линий-выносок.</text>
+    <g font-size="24">
+      <text x="154" y="190">А</text><text x="302" y="215">Б</text>
+      <text x="154" y="518">А</text><text x="302" y="493">Б</text>
+      <text x="1150" y="551">Палец. Сталь</text>
+    </g>
+  </g>
+  <g fill="none" stroke="#172b44" stroke-width="4" stroke-linejoin="round">
+    <path d="M164 303L105 347 164 392M164 258H297V437H164Z
+             M297 280H452V413H297M297 295H452M297 397H452"/>
+    <circle cx="230" cy="347" r="34"/>
+    <circle cx="618" cy="347" r="90"/>
+    <circle cx="618" cy="347" r="46"/>
+  </g>
+  <g fill="none" stroke="#172b44" stroke-width="2.2">
+    <path d="M297 295L452 397M297 397L452 295"/>
+    <path d="M156 200H226M302 225H370M156 497H226M302 474H370" marker-end="url(#arrow)"/>
+    <path d="M230 190V245M374 214V266M230 452V508M374 429V486" stroke-width="7"/>
+    <path d="M83 347H476M230 296V397M505 347H730M618 235V459M770 347H996M883 234V460M1035 347H1261M1148 234V460"
+          stroke-dasharray="27 6 4 6"/>
+    <path d="M535 314H701M535 380H701M575 298Q618 265 661 298V396Q618 429 575 396Z" stroke-dasharray="15 7"/>
+  </g>
+</svg>

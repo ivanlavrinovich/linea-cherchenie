@@ -1,0 +1,6 @@
+.technical-drawing .motion-art { animation: none !important; }
+.technical-drawing .motion-hidden { stroke: #7599bc; stroke-width: 1.2; stroke-dasharray: 6 4; }
+.technical-drawing .motion-cut { stroke: #cbe7ff; stroke-width: 2.8; }
+.technical-drawing .motion-separated,
+.technical-drawing.motion-open .motion-joined { display: none; }
+.technical-drawing.motion-open .motion-separated { display: initial; }

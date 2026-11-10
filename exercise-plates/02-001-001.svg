@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="330" viewBox="0 0 960 330" role="img" aria-labelledby="title">
+  <title id="title">Отрезок AB для деления на четыре части</title>
+  <g fill="#172b44" font-family="Arial,sans-serif" font-size="23">
+    <text x="30" y="42">Раздели отрезок AB циркулем на четыре равные части.</text>
+    <text x="250" y="206" text-anchor="middle">A</text>
+    <text x="710" y="206" text-anchor="middle">B</text>
+  </g>
+  <path d="M250 164H710M250 153v22M710 153v22" fill="none" stroke="#172b44" stroke-width="3" stroke-linecap="round"/>
+</svg>

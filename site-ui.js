@@ -1,4 +1,50 @@
 (() => {
+  const studyKey = 'linea-study';
+  const motionToggle = document.querySelector('[data-motion-toggle]');
+  if (motionToggle) {
+    const readStudy = () => {
+      try { return JSON.parse(localStorage.getItem(studyKey)) || {}; }
+      catch { return {}; }
+    };
+    function setMotion(reduced) {
+      document.body.classList.toggle('no-motion', reduced);
+      motionToggle.setAttribute('aria-pressed', String(reduced));
+    }
+    const syncMotion = () => setMotion(Boolean(readStudy().noMotion));
+    motionToggle.onclick = () => {
+      const reduced = !document.body.classList.contains('no-motion');
+      setMotion(reduced);
+      try { localStorage.setItem(studyKey, JSON.stringify({ ...readStudy(), noMotion: reduced })); }
+      catch {}
+      window.dispatchEvent(new Event('linea-motion-change'));
+    };
+    addEventListener('pageshow', syncMotion);
+    addEventListener('storage', event => { if (event.key === studyKey) syncMotion(); });
+    syncMotion();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver(entries => {
+      for (const { target, isIntersecting } of entries) {
+        if (!isIntersecting) continue;
+        target.classList.add('site-revealed');
+        observer.unobserve(target);
+      }
+    });
+    const blocks = [
+      'body > aside', '.shell > header', 'main > footer',
+      '.hero-portraits img', '.hero > .model3d', 'main > .strip',
+      'main .section-heading', 'main .filters', '#cards > .card',
+      '#lab .tools > *', 'main > .quote', '.motion-panel',
+      '.lesson-page > :is(.breadcrumbs, h1, .lesson-lead, .textbook-intro, .theory-section, .model3d, .chapter-notes, .chapter-nav)',
+      '.lab-page > :is(.breadcrumbs, h1, .lab-intro, .lab-links)',
+      '.lab-section > :is(h2, p, .lab-card)', '.lab-grid > .lab-card',
+      '.profile-main > :is(.breadcrumbs, h1, p)', '.profile-panel',
+    ];
+    document.querySelectorAll(blocks.join(',')).forEach(block => observer.observe(block));
+  }, { once: true });
+
   const themeKey = 'linea-theme';
   const theme = document.querySelector('[data-theme-toggle]');
   function applyTheme(light) {
@@ -100,6 +146,16 @@
   window.lineaSearch = { open };
   form.onsubmit = e => { e.preventDefault(); open(form.querySelector('input').value.trim()); };
   dialog.querySelector('[data-close-search]').onclick = () => dialog.close();
+  dialog.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || event.isComposing) return;
+    event.preventDefault();
+    dialog.close();
+  });
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const { left, top, right, bottom } = dialog.getBoundingClientRect();
+    if (event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom) dialog.close();
+  });
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); open(); }
   });

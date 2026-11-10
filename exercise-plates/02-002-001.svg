@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="390" viewBox="0 0 960 390" role="img" aria-labelledby="title">
+  <title id="title">Угол ACB для деления пополам</title>
+  <g fill="#172b44" font-family="Arial,sans-serif" font-size="23">
+    <text x="30" y="42">Раздели угол ACB на две равные части.</text>
+    <text x="225" y="127" text-anchor="middle">A</text>
+    <text x="450" y="246" text-anchor="middle">C</text>
+    <text x="740" y="246" text-anchor="middle">B</text>
+  </g>
+  <path d="M225 102 450 216H740" fill="none" stroke="#172b44" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

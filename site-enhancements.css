@@ -131,3 +131,18 @@
   .theory-table thead { display: table-header-group; }
   .glossary-term { text-decoration: none; }
 }
+.site-revealed {
+  animation: site-reveal 2s cubic-bezier(.2, .65, .3, 1);
+}
+
+@keyframes site-reveal {
+  from { opacity: .12; translate: 0 36px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  .site-revealed { animation: none; }
+}
+
+.no-motion .site-revealed { animation: none; }
+html:has(body.no-motion) { scroll-behavior: auto; }
